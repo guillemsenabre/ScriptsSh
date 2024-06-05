@@ -151,8 +151,5 @@ sudo losetup -d "$loopdevice" || exit 10
 
 echo "$loopdevice detached"
 
-# Change owner to gsnabre (hardcoded)
-sudo chown gsenabre:gsenabre "$filename" || exit 12
-
 # Move .img to output directory
 sudo mv "$filename" $out_dir
