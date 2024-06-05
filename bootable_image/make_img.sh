@@ -2,7 +2,8 @@
 
 # Args check
 
-if [ $# -ne 1 ];then
+if [ $# -ne 1 ]
+then
 	echo "Usage: $0 <filename>"
   	exit 1
 fi
@@ -15,10 +16,8 @@ fi
 #(3) remove created dirs and
 #(4) remove .img file
 
-if [ $? -ne 0 ]
-then
-	trap 'cleanup' EXIT
-fi
+# Set trap to call the cleanup function on script exit
+trap 'if [ $? -ne 0 ]; then cleanup; fi' EXIT
 
 cleanup()
 {
