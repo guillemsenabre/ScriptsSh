@@ -8,7 +8,8 @@ then
   	exit 1
 fi
 
-# Traps and Cleanup
+# Traps and Cleanup ------------------
+
 # Trap will be executed whenever the script exits
 # Cleanup will
 #(1) Detach loop devices
@@ -28,6 +29,10 @@ cleanup()
 	sudo rm -rf /mnt/boot /mnt/rootfs
 	sudo rm ${curr}/${filename}
 }
+
+# ------------------------------------
+
+# Configuration and variables --------
 
 # Save current directory
 curr=$(pwd)
@@ -63,6 +68,10 @@ fs_ext=ext2
 boot_part=fat32
 boot_format=vfat
 
+# -----------------------------------
+
+# Building disk image ---------------
+
 # Create disk with $count blocks of size $bs -> size_of_disk = $bs * $count [MiB]
 dd if=/dev/zero of="$filename" bs=$bs count=$count || exit 1
 
@@ -86,6 +95,7 @@ mkfs.${fs_ext} ${loopdevice}p2
 
 echo "partitions formatted"
 
+
 # Partition 1 ------------------------
 
 # Create dir boot in mount to mount partition 1
@@ -104,7 +114,6 @@ ls -lh /mnt/boot
 
 # Umount /mnt/boot
 umount "${loopdevice}p1" || exit 9
-
 echo "Partition 1 ok"
 
 # Partition 2 ------------------------
