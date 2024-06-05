@@ -9,13 +9,14 @@ then
 fi
 
 # Traps and Cleanup
-trap 'sudo cleanup' EXIT
+trap 'cleanup' EXIT
 
 cleanup()
 {
-       sudo losetup -d "$loopdevice" 
-       sudo umount /mnt/boot
-       sudo umount /mnt/rootfs
+	sudo losetup -d "$loopdevice" 
+        sudo umount /mnt/boot
+        sudo umount /mnt/rootfs
+	sudo rm -rf /mnt/boot /mnt/rootfs
 }
 
 
@@ -26,10 +27,10 @@ filename="$1"
 image_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/Image
 
 # Path to OpenSBI firmware/bootloader
-opensbi_fw=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/fw_ju>
+opensbi_fw=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/fw_jump.efl
 
 # Path to root filesystem
-rootfs_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/root>
+rootfs_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/rootfs.ext2
 
 # Define block size [Mi]
 bs=1M
@@ -54,8 +55,8 @@ parted "$filename" --script mklabel $table_type || exit 2
 parted "$filename" --script mkpart primary $boot_part 1M 25M || exit 3
 parted "$filename" --script mkpart primary $fs_ext 25M 100% || exit 3
 
-# Set boot flag
-parted "$filename" --script set 1 boot on || exit 4 # Set boot flag on partition 1
+# Set boot flag on partition 1
+parted "$filename" --script set 1 boot on || exit 4
 
 # Setup loop device
 loopdevice=$(losetup -f --show "$filename") || exit 5
