@@ -75,6 +75,11 @@ boot_format=vfat
 # Create disk with $count blocks of size $bs -> size_of_disk = $bs * $count [MiB]
 dd if=/dev/zero of="$filename" bs=$bs count=$count || exit 1
 
+# Add writing permissions for user
+chmod +w $filename
+
+echo "$(ls -lh)"
+
 # Make 2 disk partitions using partition table $table_type
 parted "$filename" --script mklabel $table_type || exit 2
 parted "$filename" --script mkpart primary $boot_part 1MiB 25MiB || exit 3
@@ -84,14 +89,14 @@ parted "$filename" --script mkpart primary $fs_ext 25MiB 100% || exit 3
 parted "$filename" --script -- set 1 esp on || exit 4
 
 # Setup loop device
-loopdevice=$(losetup -f --show "$filename") || exit 5
+loopdevice=$(sudo losetup -f --show "$filename") || exit 5
 
 # Inform the OS of partition table changes on the loop device
-partprobe $loopdevice
+sudo partprobe $loopdevice
 
 # Format partitions vfat/fat32 (p1 (boot)) and ext2 (p2 (fs))
-mkfs.${boot_format} ${loopdevice}p1
-mkfs.${fs_ext} ${loopdevice}p2
+sudo mkfs.${boot_format} ${loopdevice}p1
+sudo mkfs.${fs_ext} ${loopdevice}p2
 
 echo "partitions formatted"
 
@@ -99,55 +104,55 @@ echo "partitions formatted"
 # Partition 1 ------------------------
 
 # Create dir boot in mount to mount partition 1
-mkdir -p /mnt/boot || exit 6
+sudo mkdir -p /mnt/boot || exit 6
 
 # Mount partition 1 in /mnt/boot
-mount "${loopdevice}p1" /mnt/boot || exit 7
+sudo mount "${loopdevice}p1" /mnt/boot || exit 7
 
 # Copy kernel image and firmware (opensbi?) in mnt/boot
-cp $image_file /mnt/boot || exit 8
-cp $opensbi_fw /mnt/boot || exit 8
+sudo cp $image_file /mnt/boot || exit 8
+sudo cp $opensbi_fw /mnt/boot || exit 8
 
 # Debug & info
 echo "Content of /mnt/boot after mount and copy:"
 ls -lh /mnt/boot
 
 # Umount /mnt/boot
-umount "${loopdevice}p1" || exit 9
+sudo umount "${loopdevice}p1" || exit 9
 echo "Partition 1 ok"
 
 # Partition 2 ------------------------
 
 # Create dir rootfs in mount to mount partition 2
-mkdir -p /mnt/rootfs || exit 6
+sudo mkdir -p /mnt/rootfs || exit 6
 
 # Mount partition 2 in /mnt/rootfs
-mount "${loopdevice}p2" /mnt/rootfs || exit 7
+sudo mount "${loopdevice}p2" /mnt/rootfs || exit 7
 
 # If using rootfs.ext2 (or other extension) use dd to copy files into the mounted device
 #dd if=$rootfs_file of=/mnt/rootfs/rootfs.ext2 bs=1M || exit 8
 
 # IF using rootfs.tar, decompress the file into the mounted device
-tar -xf $rootfs_file -C /mnt/rootfs || exit 11
+sudo tar -xf $rootfs_file -C /mnt/rootfs || exit 11
 
 # Debug & info
 echo "Content of /mnt/rootfs after mount and copy:"
 ls /mnt/rootfs
 
 # Unmount /mnt/rootfs
-umount "${loopdevice}p2" || exit 9
+sudo umount "${loopdevice}p2" || exit 9
 
 echo "Partition 2 ok"
 
 # ------------------------------------
 
 # Detach loop device
-losetup -d "$loopdevice" || exit 10
+sudo losetup -d "$loopdevice" || exit 10
 
 echo "$loopdevice detached"
 
 # Change owner to gsnabre (hardcoded)
-chown gsenabre:gsenabre "$filename" || exit 12
+sudo chown gsenabre:gsenabre "$filename" || exit 12
 
 # Move .img to output directory
-mv "$filename" $out_dir
+sudo mv "$filename" $out_dir
