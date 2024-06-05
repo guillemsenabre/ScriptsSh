@@ -18,6 +18,7 @@ trap 'cleanup' EXIT
 
 cleanup()
 {
+	echo "Starting cleanup..."
 	sudo losetup -d "$loopdevice"
         sudo umount /mnt/boot
         sudo umount /mnt/rootfs
@@ -61,8 +62,8 @@ dd if=/dev/zero of="$filename" bs=$bs count=$count || exit 1
 
 # Make 2 disk partitions using partition table $table_type
 parted "$filename" --script mklabel $table_type || exit 2
-parted "$filename" --script mkpart primary $boot_part 1M 25M || exit 3
-parted "$filename" --script mkpart primary $fs_ext 25M 100% || exit 3
+parted "$filename" --script mkpart primary $boot_part 1MiB 25MiB || exit 3
+parted "$filename" --script mkpart primary $fs_ext 25MiB 100% || exit 3
 
 # Set esp (for UEFI sys, like OpenSBI) flag on partition 1
 parted "$filename" --script -- set 1 esp on || exit 4
@@ -70,9 +71,12 @@ parted "$filename" --script -- set 1 esp on || exit 4
 # Setup loop device
 loopdevice=$(losetup -f --show "$filename") || exit 5
 
+# Inform the OS of partition table changes on the loop device
+partprobe $loopdevice
+
 # Format partitions vfat/fat32 (p1 (boot)) and ext2 (p2 (fs))
 mkfs.${boot_format} ${loopdevice}p1
-mkfs.${boot_part} ${loopdevice}p2
+mkfs.${fs_ext} ${loopdevice}p2
 
 # Mount partition 1 (bootable)
 sudo mkdir -p /mnt/boot || exit 6
