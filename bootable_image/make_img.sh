@@ -22,7 +22,7 @@ cleanup()
         sudo umount /mnt/boot
         sudo umount /mnt/rootfs
 	sudo rm -rf /mnt/boot /mnt/rootfs
-	sudo rm curr/${filename}
+	sudo rm ${curr}/${filename}
 }
 
 # Save current directory
@@ -52,8 +52,9 @@ table_type=gpt
 # filesystem extension can be ext2, ext3, ext4.
 fs_ext=ext2
 
-# vfat partition is a bootable partition (efi?) fat32.
-boot_part=vfat
+# vfat format is an extension of fat32. Both are supported by UEFI systems.
+boot_part=fat32
+boot_format=vfat
 
 # Create disk with $count blocks of size $bs -> size_of_disk = $bs * $count [MiB]
 dd if=/dev/zero of="$filename" bs=$bs count=$count || exit 1
@@ -63,11 +64,15 @@ parted "$filename" --script mklabel $table_type || exit 2
 parted "$filename" --script mkpart primary $boot_part 1M 25M || exit 3
 parted "$filename" --script mkpart primary $fs_ext 25M 100% || exit 3
 
-# Set boot flag on partition 1
-parted "$filename" --script set 1 boot on || exit 4
+# Set esp (for UEFI sys, like OpenSBI) flag on partition 1
+parted "$filename" --script -- set 1 esp on || exit 4
 
 # Setup loop device
 loopdevice=$(losetup -f --show "$filename") || exit 5
+
+# Format partitions vfat/fat32 (p1 (boot)) and ext2 (p2 (fs))
+mkfs.${boot_format} ${loopdevice}p1
+mkfs.${boot_part} ${loopdevice}p2
 
 # Mount partition 1 (bootable)
 sudo mkdir -p /mnt/boot || exit 6
