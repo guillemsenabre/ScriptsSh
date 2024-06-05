@@ -86,32 +86,59 @@ mkfs.${fs_ext} ${loopdevice}p2
 
 echo "partitions formatted"
 
-# Mount partition 1 (bootable)
+# Partition 1 ------------------------
+
+# Create dir boot in mount to mount partition 1
 mkdir -p /mnt/boot || exit 6
+
+# Mount partition 1 in /mnt/boot
 mount "${loopdevice}p1" /mnt/boot || exit 7
+
+# Copy kernel image and firmware (opensbi?) in mnt/boot
 cp $image_file /mnt/boot || exit 8
 cp $opensbi_fw /mnt/boot || exit 8
+
+# Debug & info
 echo "Content of /mnt/boot after mount and copy:"
 ls -lh /mnt/boot
+
+# Umount /mnt/boot
 umount "${loopdevice}p1" || exit 9
 
 echo "Partition 1 ok"
 
-# Mount partition 2 (filesystem)
+# Partition 2 ------------------------
+
+# Create dir rootfs in mount to mount partition 2
 mkdir -p /mnt/rootfs || exit 6
+
+# Mount partition 2 in /mnt/rootfs
 mount "${loopdevice}p2" /mnt/rootfs || exit 7
+
+# If using rootfs.ext2 (or other extension) use dd to copy files into the mounted device
 #dd if=$rootfs_file of=/mnt/rootfs/rootfs.ext2 bs=1M || exit 8
-tar -xf $rootfs_file -C /mnt/rootfs
+
+# IF using rootfs.tar, decompress the file into the mounted device
+tar -xf $rootfs_file -C /mnt/rootfs || exit 11
+
+# Debug & info
 echo "Content of /mnt/rootfs after mount and copy:"
 ls /mnt/rootfs
+
+# Unmount /mnt/rootfs
 umount "${loopdevice}p2" || exit 9
 
 echo "Partition 2 ok"
+
+# ------------------------------------
 
 # Detach loop device
 losetup -d "$loopdevice" || exit 10
 
 echo "$loopdevice detached"
+
+# Change owner to gsnabre (hardcoded)
+chown gsenabre:gsenabre "$filename" || exit 12
 
 # Move .img to output directory
 mv "$filename" $out_dir
