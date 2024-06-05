@@ -2,23 +2,31 @@
 
 # Args check
 
-if [ $# -ne 1 ]
-then
+if [ $# -ne 1 ];then
 	echo "Usage: $0 <filename>"
   	exit 1
 fi
 
 # Traps and Cleanup
+# Trap will be executed whenever the script exits
+# Cleanup will
+#(1) Detach loop devices
+#(2) unmount both partitions
+#(3) remove created dirs and
+#(4) remove .img file
 trap 'cleanup' EXIT
 
 cleanup()
 {
-	sudo losetup -d "$loopdevice" 
+	sudo losetup -d "$loopdevice"
         sudo umount /mnt/boot
         sudo umount /mnt/rootfs
 	sudo rm -rf /mnt/boot /mnt/rootfs
+	sudo rm curr/${filename}
 }
 
+# Save current directory
+curr=$(pwd)
 
 # TODO - Change arguments to $1 $2 $3 ...
 filename="$1"
