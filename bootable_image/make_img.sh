@@ -14,7 +14,11 @@ fi
 #(2) unmount both partitions
 #(3) remove created dirs and
 #(4) remove .img file
-trap 'cleanup' EXIT
+
+if [ $? -ne 0 ]
+then
+	trap 'cleanup' EXIT
+fi
 
 cleanup()
 {
@@ -32,11 +36,14 @@ curr=$(pwd)
 # TODO - Change arguments to $1 $2 $3 ...
 filename="$1"
 
+# Path to dir where the .img will be stored
+out_dir=/home/gsenabre/images/test_img_buildroot/
+
 # Path to kernel image
 image_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/Image
 
 # Path to OpenSBI firmware/bootloader
-opensbi_fw=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/fw_jump.efl
+opensbi_fw=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/fw_jump.elf
 
 # Path to root filesystem
 rootfs_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/rootfs.ext2
@@ -78,18 +85,29 @@ partprobe $loopdevice
 mkfs.${boot_format} ${loopdevice}p1
 mkfs.${fs_ext} ${loopdevice}p2
 
+echo "partitions formatted"
+
 # Mount partition 1 (bootable)
-sudo mkdir -p /mnt/boot || exit 6
-sudo mount "${loopdevice}p1" /mnt/boot || exit 7
-sudo cp $image_file /mnt/boot || exit 8
-sudo cp $opensbi_fw /mnt/boot || exit 8
-sudo umount "${loopdevice}p1" || exit 9
+mkdir -p /mnt/boot || exit 6
+mount "${loopdevice}p1" /mnt/boot || exit 7
+cp $image_file /mnt/boot || exit 8
+cp $opensbi_fw /mnt/boot || exit 8
+umount "${loopdevice}p1" || exit 9
+
+echo "Partition 1 ok"
 
 # Mount partition 2 (filesystem)
-sudo mkdir -p /mnt/rootfs || exit 6
-sudo mount "${loopdevice}p2" /mnt/rootfs || exit 7
-sudo cp $rootfs_file /mnt/rootfs || exit 8
-sudo umount "${loopdevice}p2" || exit 9
+mkdir -p /mnt/rootfs || exit 6
+mount "${loopdevice}p2" /mnt/rootfs || exit 7
+cp $rootfs_file /mnt/rootfs || exit 8
+umount "${loopdevice}p2" || exit 9
+
+echo "Partition 2 ok"
 
 # Detach loop device
-sudo losetup -d "$loopdevice" || exit 10
+losetup -d "$loopdevice" || exit 10
+
+echo "$loopdevice detached"
+
+# Move .img to output directory
+mv "$filename" $out_dir
