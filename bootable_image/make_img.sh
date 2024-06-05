@@ -45,7 +45,7 @@ image_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/Imag
 opensbi_fw=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/fw_jump.elf
 
 # Path to root filesystem
-rootfs_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/rootfs.ext2
+rootfs_file=/home/gsenabre/Documents/buildroot_dirs/buildroot1/output/images/rootfs.tar
 
 # Define block size [Mi]
 bs=1M
@@ -91,6 +91,8 @@ mkdir -p /mnt/boot || exit 6
 mount "${loopdevice}p1" /mnt/boot || exit 7
 cp $image_file /mnt/boot || exit 8
 cp $opensbi_fw /mnt/boot || exit 8
+echo "Content of /mnt/boot after mount and copy:"
+ls -lh /mnt/boot
 umount "${loopdevice}p1" || exit 9
 
 echo "Partition 1 ok"
@@ -98,7 +100,10 @@ echo "Partition 1 ok"
 # Mount partition 2 (filesystem)
 mkdir -p /mnt/rootfs || exit 6
 mount "${loopdevice}p2" /mnt/rootfs || exit 7
-cp $rootfs_file /mnt/rootfs || exit 8
+#dd if=$rootfs_file of=/mnt/rootfs/rootfs.ext2 bs=1M || exit 8
+tar -xf $rootfs_file -C /mnt/rootfs
+echo "Content of /mnt/rootfs after mount and copy:"
+ls /mnt/rootfs
 umount "${loopdevice}p2" || exit 9
 
 echo "Partition 2 ok"
