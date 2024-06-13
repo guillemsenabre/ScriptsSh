@@ -40,11 +40,16 @@ backup()
 	mkdir $backup_node_dir
 
         echo "--> Backing up directory $dir_to_back_up of node $node"
-        rsync -azvv -e ssh \
-		--rsync-path="sudo rsync" \
-		--link-dest "${latest_link_path}" \
-		sipeed@$node:$dir_to_back_up \
-		$backup_node_dir
+	rsync -azvv -e ssh \
+	      	--rsync-path="sudo rsync" \
+	      	--link-dest="${latest_link_path}" \
+	      	--exclude="/dev/*" \
+	      	--exclude="/proc/*" \
+	      	--exclude="/sys/*" \
+	      	--exclude="/tmp/*" \
+	      	--exclude="*lost+found" \
+	      	sipeed@$node:$dir_to_back_up \
+	      	$backup_node_dir
 
         check_backup $node
 
