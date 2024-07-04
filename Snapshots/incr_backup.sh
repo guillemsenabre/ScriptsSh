@@ -3,15 +3,15 @@
 #** VARIABLES **#
 
 # Backup path for testing purposes
-test=/home/sipeed/testdir/
-#fullbk=/
+#test=/home/sipeed/testdir/
+fullbk=/
 
 # Array of nodes to be backed up (user is always "sipeed", if not, change variable to array).
 # Can be changed by IP addresses as well -> new backup dirs' name will change
 nodes=(ln01 ln02 ln03 ln04 controller)
 
 # Change between test (test files) or fullbk (all fs)
-dir_to_back_up=$test
+dir_to_back_up=$fullbk
 
 # Path to save backup files from all nodes
 backup_dir=/mnt/lichee_backups
@@ -40,15 +40,18 @@ backup()
 	mkdir $backup_node_dir
 
         echo "--> Backing up directory $dir_to_back_up of node $node"
-	rsync -azvv -e ssh \
-	      	--rsync-path="sudo rsync" \
-	      	--link-dest="${latest_link_path}" \
-	      	--exclude="/dev/*" \
-	      	--exclude="/proc/*" \
-	      	--exclude="/sys/*" \
-	      	--exclude="/tmp/*" \
-	      	--exclude="*lost+found" \
-	      	sipeed@$node:$dir_to_back_up \
+	rsync -aAXHvv -e ssh \
+		--rsync-path="sudo rsync" \
+	      	--link-dest='${latest_link_path}' \
+	      	--exclude='/dev/*' \
+		--exclude='/media/*' \
+		--exclude='/run/*' \
+		--exclude='/mnt/*' \
+	      	--exclude='/proc/*' \
+	      	--exclude='/sys/*' \
+	      	--exclude='/tmp/*' \
+	      	--exclude='/lost+found/' \
+	      	sipeed@${node}:$dir_to_back_up \
 	      	$backup_node_dir
 
         check_backup $node
