@@ -2,13 +2,15 @@
 
 # TODO: Consider exporting the current commit as an environment variable to continue from that commit next time
 # cd into kernel directory
-pushd ~/kernel_last
+pushd ~/kernel_builds/th1520_build_last/kernel
 
 # Define the starting commit (the on defined is 1 commit before, due to the nature of the command used (rev-list))
-START_COMMIT="c32ad7b836c87ab5b796e724c39f14d5cbcb4715"
+#START_COMMIT="c32ad7b836c87ab5b796e724c39f14d5cbcb4715"
+CONTINUE_COMMIT="95a545985"
 
 # Get the list of commits from the starting point to the latest
-commits=$(git rev-list --reverse $START_COMMIT..HEAD)
+#commits=$(git rev-list --reverse $START_COMMIT..HEAD)
+commits=$(git rev-list --reverse $CONTINUE_COMMIT..HEAD)
 
 # Iterate over each commit in the list
 for current_commit in $commits
