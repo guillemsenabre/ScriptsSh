@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# RUN THIS SCRIPT FROM /HOME/USER/ or ~/
 ## Start Configuration ##
 
 export xuetie_toolchain=https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1663142514282
@@ -7,8 +8,9 @@ export toolchain_file_name=Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1-2022
 export toolchain_tripe=riscv64-linux-gnu-
 export ARCH=riscv
 export nproc=12
-WORKSPACE_DIR="th1520_build_556f057ac"
-KERNEL_COMMIT_ID="556f057aca339cae1f71e91b41650337eaee4d9e"
+WORKSPACE_DIR="th1520_build_6a61ffb0b"
+KERNEL_COMMIT_ID="6a61ffb0b615e5c1957e33b5319d9086f26fa2b4"
+CROSSCOMPILE_TOOLCHAIN_PATH="/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1"
 export GITHUB_WORKSPACE="${HOME}/${WORKSPACE_DIR}"
 export KERNEL_GIT="https://github.com/revyos/thead-kernel.git"
 
@@ -38,28 +40,38 @@ KERNEL_CONFIG=revyos_defconfig
 # Cloning kernel (last version). Later you can decide using an older version (need to specify commit_id in KERNEL_COMMIT_ID)
 git clone ${KERNEL_GIT} ${KERNEL_DIR}
 
+read -p "Proceed to compilation? <y> to proceed: " proceed
+
+if [ $proceed = "y" ]; then
+	echo "Proceeding..."
+else
+	echo "Exiting.."
+	exit 1
+fi
+
+
 # Getting cross compile toolchain if necessary.
-if [ ! -e "/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1" ]; then
+if [ ! -e ${CROSSCOMPILE_TOOLCHAIN_PATH} ]; then
 	# If cross compile tools are not in /opt, decompress inside /opt
 	wget ${xuetie_toolchain}/${toolchain_file_name}
 	sudo tar -xvf ${toolchain_file_name} -C /opt
-	export PATH="/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1/bin:$PATH"
+	export PATH=${CROSSCOMPILE_TOOLCHAIN_PATH}/bin:$PATH"
 else
 	# If cross compile tools are in /opt, add to PATH
-	export PATH="/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1/bin:$PATH"
+	export PATH=${CROSSCOMPILE_TOOLCHAIN_PATH}/bin:$PATH"
 fi
 
 
 #BUILD KERNEL
-echo "Building kernel..."
+echo "INFO: Building kernel..."
 pushd $KERNEL_DIR
-echo "Taking specific commit..."
-git reset --hard $KERNEL_COMMIT_ID
+#echo "INFO: Taking specific kernel version ${KERNEL_COMMIT_ID}..."
+#git reset --hard $KERNEL_COMMIT_ID
 
-echo "Compiling..."
-make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} ${KERNEL_CONFIG}
-make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} -j$(nproc)
-make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} -j$(nproc) dtbs
+echo "INFO: Compiling..."
+make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} ${KERNEL_CONFIG} || { echo "INFO: make defconfig ${KERNEL_CONFIG} failed, exiting..."; exit 1; }
+make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} -j$(nproc) || { echo "INFO: kernel build failed, exiting..."; exit 1; }
+make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} -j$(nproc) dtbs || { echo "INFO: dtbs build failed, exiting..."; exit 1; }
 if [ x"$(cat .config | grep CONFIG_MODULES=y)" = x"CONFIG_MODULES=y" ]; then
     sudo make CROSS_COMPILE=${toolchain_tripe}  ARCH=${ARCH} INSTALL_MOD_PATH=${GITHUB_WORKSPACE}/rootfs/ modules_install -j$(nproc)
 fi
@@ -73,13 +85,13 @@ fi
 #(?)#[ ! -d ${GITHUB_WORKSPACE}/rootfs/boot/ ] && mkdir -p ${GITHUB_WORKSPACE}/rootfs/boot/
 
 # record commit-id
-echo "Recording commit id"
+echo "INFO: Recording commit id"
 git rev-parse HEAD > kernel-commitid
 sudo cp -v kernel-commitid ${GITHUB_WORKSPACE}/rootfs/boot/
 
 
 # Install kernel
-echo "Installing kernel into rootfs/boot/"
+echo "INFO: Installing kernel into rootfs/boot/"
 echo $PWD
 sudo cp -v arch/riscv/boot/Image ${GITHUB_WORKSPACE}/rootfs/boot/
 
