@@ -8,10 +8,10 @@ export toolchain_file_name=Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1-2022
 export toolchain_tripe=riscv64-linux-gnu-
 export ARCH=riscv
 export nproc=12
-WORKSPACE_DIR="th1520_build_6a61ffb0b"
+WORKSPACE_DIR="6a61ffb0b_debug"
 KERNEL_COMMIT_ID="6a61ffb0b615e5c1957e33b5319d9086f26fa2b4"
 CROSSCOMPILE_TOOLCHAIN_PATH="/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1"
-export GITHUB_WORKSPACE="${HOME}/${WORKSPACE_DIR}"
+export GITHUB_WORKSPACE="/home/gsenabre/${WORKSPACE_DIR}"
 export KERNEL_GIT="https://github.com/revyos/thead-kernel.git"
 
 # Creates build directory and cds into it
@@ -40,14 +40,6 @@ KERNEL_CONFIG=revyos_defconfig
 # Cloning kernel (last version). Later you can decide using an older version (need to specify commit_id in KERNEL_COMMIT_ID)
 git clone ${KERNEL_GIT} ${KERNEL_DIR}
 
-read -p "Proceed to compilation? <y> to proceed: " proceed
-
-if [ $proceed = "y" ]; then
-	echo "Proceeding..."
-else
-	echo "Exiting.."
-	exit 1
-fi
 
 
 # Getting cross compile toolchain if necessary.
@@ -63,10 +55,21 @@ fi
 
 
 #BUILD KERNEL
-echo "INFO: Building kernel..."
 pushd $KERNEL_DIR
-#echo "INFO: Taking specific kernel version ${KERNEL_COMMIT_ID}..."
-#git reset --hard $KERNEL_COMMIT_ID
+echo "INFO: Taking specific kernel version ${KERNEL_COMMIT_ID}..."
+git reset --hard $KERNEL_COMMIT_ID
+
+
+# Exit the script if you don't want to build yet
+read -p "Proceed to compilation? <y> to proceed: " proceed
+
+if [ $proceed = "y" ]; then
+	echo "Proceeding..."
+else
+	echo "Exiting.."
+	exit 1
+fi
+
 
 echo "INFO: Compiling..."
 make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} ${KERNEL_CONFIG} || { echo "INFO: make defconfig ${KERNEL_CONFIG} failed, exiting..."; exit 1; }
