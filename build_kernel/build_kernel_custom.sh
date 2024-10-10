@@ -8,11 +8,11 @@ export toolchain_file_name=Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1-2022
 export toolchain_tripe=riscv64-linux-gnu-
 export ARCH=riscv
 export nproc=12
-WORKSPACE_DIR="f6b3a51da_debug"
-KERNEL_COMMIT_ID="f6b3a51dabe3da53fbfc18cb0d53278ec686cacb"
+WORKSPACE_DIR="kernel_builds/th1520-lts"
+#KERNEL_COMMIT_ID="f6b3a51dabe3da53fbfc18cb0d53278ec686cacb"
 CROSSCOMPILE_TOOLCHAIN_PATH="/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.6.1"
 export GITHUB_WORKSPACE="/home/gsenabre/${WORKSPACE_DIR}"
-export KERNEL_GIT="https://github.com/revyos/thead-kernel.git"
+export KERNEL_GIT="git@github.com:revyos/th1520-linux-kernel.git"
 
 # Creates build directory and cds into it
 mkdir ${WORKSPACE_DIR} && cd ${WORKSPACE_DIR} || { echo "INFO: Kernel clone failed, exiting..."; exit 1; }
@@ -36,6 +36,8 @@ mkdir -p ${GITHUB_WORKSPACE}/rootfs/sbin/
 # Kernel directory name and revyos configuration setup
 KERNEL_DIR=kernel
 KERNEL_CONFIG=revyos_defconfig
+# Releases supported: 6.x; 5.10
+KERNEL_RELEASE="6.x"
 
 # Cloning kernel (last version). Later you can decide using an older version (need to specify commit_id in KERNEL_COMMIT_ID)
 git clone ${KERNEL_GIT} ${KERNEL_DIR}
@@ -56,8 +58,8 @@ fi
 
 #BUILD KERNEL
 pushd $KERNEL_DIR
-echo "INFO: Taking specific kernel version ${KERNEL_COMMIT_ID}..."
-git reset --hard $KERNEL_COMMIT_ID
+#echo "INFO: Taking specific kernel version ${KERNEL_COMMIT_ID}..."
+#git reset --hard $KERNEL_COMMIT_ID
 
 
 # Exit the script if you don't want to build yet
@@ -85,8 +87,6 @@ fi
 #sudo cp -v tools/perf/perf ${GITHUB_WORKSPACE}/rootfs/sbin/perf-thead
 
 
-#(?)#[ ! -d ${GITHUB_WORKSPACE}/rootfs/boot/ ] && mkdir -p ${GITHUB_WORKSPACE}/rootfs/boot/
-
 # record commit-id
 echo "INFO: Recording commit id"
 git rev-parse HEAD > kernel-commitid
@@ -99,12 +99,25 @@ echo $PWD
 sudo cp -v arch/riscv/boot/Image ${GITHUB_WORKSPACE}/rootfs/boot/
 
 # INSTALL DTB, device tree to target directory (ORIGINAL KERNEL FROM SIPEED)
-echo "Installing dtbs to target directory"
-sudo cp -v arch/riscv/boot/dts/thead/{light-lpi4a.dtb,light-lpi4a-16gb.dtb} ${GITHUB_WORKSPACE}/rootfs/boot/
 
-#kernel 6.8 files DTB
-#arch/riscv/boot/dts/thead/{th1520.dtsi,th1520-lichee-module-4a.dtsi,th1520-lichee-pi-4a.dtsi}
-#make CROSS_COMPILE=${toolchain_tripe} ARCH=${ARCH} dtbs
-#sudo cp -v ./arch/riscv/boot/dts/thead/th1520-lichee-pi-4a.dts ${GITHUB_WORKSPACE}/rootfs/boot
+echo "Installing dtbs to target directory"
+case $KERNEL_RELEASE in
+
+	6.x)
+		echo "Kernel release $KERNEL_RELEASE"
+		sudo cp -v arch/riscv/boot/dts/thead/{th1520-lichee-pi-4a.dtb,th1520-lichee-pi-4a-16g.dtb} ${GITHUB_WORKSPACE}/rootfs/boot/
+	;;
+
+	5.10)
+		echo "Kernel release $KERNEL_RELEASE"
+		sudo cp -v arch/riscv/boot/dts/thead/{light-lpi4a.dtb,light-lpi4a-16gb.dtb} ${GITHUB_WORKSPACE}/rootfs/boot/
+	;;
+
+
+	*)
+		echo "Wrong kernel release. Recheck or add new case." && exit 1
+	;;
+esac
+
 
 popd
